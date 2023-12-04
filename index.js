@@ -14,6 +14,7 @@ const {open} = require("sqlite");
 const sqlite3 = require("sqlite3");
 const path = require("path");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 app.use(express.json());
@@ -190,6 +191,30 @@ app.post("/login", async (req, res) => {
       res.send("Login success");
     } else {
       res.status(400).send("Password is incorrect");
+    }
+  }
+});
+
+app.post("/login2", async(req, res)=>
+{
+  const{username, password} = req.body;
+  const selectUserQuery = `SELECT * FROM user WHERE username = '${username}'`;
+  const dbUser = await db.get(selectUserQuery);
+  console.log(dbUser);
+  if(dbUser === undefined)  {
+    res.status(400);
+    res.send("Invalid user");
+  } else {
+    const isPasswordMatched = await bcrypt.compare(password, dbUser.password);
+    if(isPasswordMatched){
+      const payload = {
+        username : username,
+      };
+      const jwtToken = jwt.sign(payload, "MY_SECRET_TOKEN");
+      res.send({jwtToken});
+    } else {
+      res.status(400);
+      res.send("Invalid Password");
     }
   }
 });
